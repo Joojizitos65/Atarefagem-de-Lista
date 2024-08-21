@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, TextInput, Button } from 'react-native';
 
 const umMesAtras = () => {
@@ -6,6 +6,8 @@ const umMesAtras = () => {
   hoje.setMonth(hoje.getMonth() - 1);
   return hoje;
 };
+
+const gerarIdUnico = () => Date.now().toString();
 
 const App = () => {
   const [tarefas, setTarefas] = useState([
@@ -15,35 +17,43 @@ const App = () => {
   ]);
   const [novaTarefa, setNovaTarefa] = useState('');
 
-  useEffect(() => {
-    const tarefasFiltradas = tarefas.filter(tarefa => tarefa.dataCriacao >= umMesAtras());
-    setTarefas(tarefasFiltradas);
-  }, []);
-
-  const alternarConclusaoTarefa = (id) => {
+  const alternarConclusaoTarefa = useCallback((id) => {
     setTarefas(tarefas.map(tarefa =>
       tarefa.id === id ? { ...tarefa, concluida: !tarefa.concluida } : tarefa
     ));
-  };
+  }, [tarefas]);
 
   const adicionarTarefa = () => {
     if (novaTarefa.trim()) {
-      const novaTarefaObj = { id: Date.now().toString(), titulo: novaTarefa, concluida: false, dataCriacao: new Date() };
-      setTarefas([novaTarefaObj, ...tarefas]); 
+      const novaTarefaObj = {
+        id: gerarIdUnico(),
+        titulo: novaTarefa,
+        concluida: false,
+        dataCriacao: new Date()
+      };
+      setTarefas([novaTarefaObj, ...tarefas]);
       setNovaTarefa('');
     }
   };
 
-  const renderizarItem = ({ item }) => (
+  const renderizarItem = useCallback(({ item }) => (
     <TouchableOpacity
-      style={[estilos.containerTarefa, item.concluida && estilos.tarefaConcluida]}
+      style={[
+        estilos.containerTarefa,
+        item.concluida && estilos.tarefaConcluida
+      ]}
       onPress={() => alternarConclusaoTarefa(item.id)}
     >
-      <Text style={[estilos.textoTarefa, item.concluida && estilos.textoTarefaConcluido]}>
+      <Text style={[
+        estilos.textoTarefa,
+        item.concluida && estilos.textoTarefaConcluido
+      ]}>
         {item.titulo}
       </Text>
     </TouchableOpacity>
-  );
+  ), [alternarConclusaoTarefa]);
+
+  const tarefasRecentes = tarefas.filter(tarefa => tarefa.dataCriacao >= umMesAtras());
 
   return (
     <View style={estilos.container}>
@@ -55,7 +65,7 @@ const App = () => {
       />
       <Button title="Adicionar Tarefa" onPress={adicionarTarefa} />
       <FlatList
-        data={tarefas}
+        data={tarefasRecentes}
         renderItem={renderizarItem}
         keyExtractor={item => item.id}
         extraData={tarefas}
